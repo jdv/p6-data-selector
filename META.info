@@ -1,0 +1,8 @@
+{
+    "name" : "Data::Selector",
+    "version" : "0.1.0",
+    "description" : "Data selection featuring terse DSL.",
+    "author" : "Justin DeVuyst",
+    "depends" : [ ],
+    "source-url" : "git://github.com/jdv79/p6-Data-Selector.git"
+}
