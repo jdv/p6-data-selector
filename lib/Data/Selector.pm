@@ -209,7 +209,7 @@ class Data::Selector {
                     my $/;
                     $selector_tree_key_pattern ~~ s:g/(\W)/\\$0/;
                     $selector_tree_key_pattern = $selector_tree_key_pattern.trans(
-                        [ '\\*', '\\\\n', '\\-0\\\\n' ] => [ '.*?', '\n', '0\n' ]
+                        [ '\\*', '\\\\n', '\\-0\\\\n' ] => [ '\N*?', '\n', '0\n' ]
                     );
                 }
                 my @matches =
