@@ -318,17 +318,17 @@ for @cases -> $case {
     );
     say "# elapsed - p6_did: " , now - $before, " p5_does_lt: ", $elasped_expected;
     my $ok = is-deeply( $selector_tree_got, $selector_tree_expected, "$desc parsed" );
-    unless $ok {
-        use Inline::Perl5;
-        $Data::Dumper::Indent = 1;
-        use Data::Dumper:from<Perl5>;
-        my $d = Data::Dumper.new(
-            [ { got => $selector_tree_got, expected => $selector_tree_expected, }, ],
-        );
-        $d.Indent(1);
-        $d.Sortkeys(1);
-        say $d.Dump;
-    }
+    #unless $ok {
+    #    use Inline::Perl5;
+    #    $Data::Dumper::Indent = 1;
+    #    use Data::Dumper:from<Perl5>;
+    #    my $d = Data::Dumper.new(
+    #        [ { got => $selector_tree_got, expected => $selector_tree_expected, }, ],
+    #    );
+    #    $d.Indent(1);
+    #    $d.Sortkeys(1);
+    #    say $d.Dump;
+    #}
 }
 
 done;
