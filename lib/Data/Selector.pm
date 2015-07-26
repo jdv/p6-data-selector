@@ -1,5 +1,216 @@
 use v6;
 
+=begin pod
+
+=head1 NAME
+
+Data::Selector - data selection dsl parser and applicator
+
+=head1 VERSION
+
+1.00
+
+=head1 SYNOPSIS
+
+=begin code
+
+ my $data_tree = {
+     foo => {
+        bar => { baz1 => 1, baz22 => 2, baz32 => [ 'a', 'b', 'c', ], },
+     },
+     asdf => 'woohoo',
+ };
+ Data::Selector.apply_tree(
+     selector_tree => Data::Selector.parse_string(
+         named_selectors => { '$bla' => '[non-existent,asdf]', },
+         selector_string => '$bla,foo.bar.baz*2.1..-1',
+         # (same thing with all optional + chars added)
+         # named_selectors => { '$bla' => '[+non-existent,+asdf]', },
+         # selector_string => '$bla,+foo.+bar.+baz*2.+1..-1',
+     ),
+     data_tree => $data_tree,
+ );
+
+ # $data_tree is now:
+ # {
+ #    foo => { bar => { baz22 => 2, baz32 => [ 'b', 'c', ], }, },
+ #    asdf => 'woohoo',
+ # }
+
+=end code
+
+=head1 DESCRIPTION
+
+This module enables data selection via a terse dsl.  The obvious use case is
+data shaping though it could also be used to hint data requirements down the
+stack.
+
+A selector string is transformed into a selector tree by parse_string().  Then
+the apply_tree() method performs key (array subscripts and hash keys) inclusion,
+and/or exclusion on a data tree using the selector tree.  Note that arrays in
+the data tree are trimmed of the slots that were removed.
+
+Note that parse_string() will throw some exceptions (in predicate form) but
+there are probably many non-sensical selector strings that it won't throw on.
+The apply_tree() method, on the other hand, does not throw any exceptions
+because in the general case this is preferable.  For example, some typical
+"errors" might be missing (misspelled in the selector tree or non-existent in
+the data tree) keys or indexing into an array with a string.  Both cases may
+legitimately happen when elements of a set are not the same shape.  In the case
+of an actual error the resulting data tree will likely reflect it.
+
+=head1 SELECTOR STRINGS
+
+Selector strings are a terse, robust way to express data selection.  They are
+sensitive to order of definition, are embeddable via square brackets, can be
+constructed of lists of selector strings, and are therefore composable.
+
+A selector string consists of tokens separated by dot characters.  Each dot
+character denotes another level in the data tree.  The selector strings may be a
+single value or a list of values delimited by square brackets and separated by
+commas.
+
+A leading hyphen character indicates exclusion.
+
+An optional leading plus character indicates inclusion.  It is only required for
+inclusion of values that start with a hyphen, like a negative array subscript,
+or a plus character.
+
+Its important to note that positive array subscripts with a leading + character
+are not supported.  For instance, the selector string of "++2" will not
+interpreted as "include array subscript 2".  It could be used to include a hash
+key of "+2" however.  The same applies to "-+2".  This inconsistency is the
+result of a limitation in the implementation and may be changed in the future.
+
+Note that inclusion, in addition to specifying what is to be included, implies a
+lower precedence exclusion of all other keys.  In other words, if a particular
+key is not specified for inclusion but there was an inclusion then it will be
+excluded.  For example, lets say the data tree is a hash with keys foo, bar, and
+baz.  A selector string of "foo" will include the foo key and exclude the bar
+and baz keys.  But a selector string of "foo,bar" will include the foo and bar
+keys and exclude the baz key.
+
+Wildcarding is supported via the asterisk character.
+
+Negative array subscripts are supported but remember that they must be preceded
+by a plus character to indicate inclusion (which must be urlencoded as %2B for
+urls).  For example, "-1" means "exclude key 1" where "+-1" means "include key
+-1".
+
+Array subscript ranges are supported via the double dot sequence.  These can be
+tricky when used with negative array subscripts.  For example, "-1..-1" means
+exclude 1 to -1.  But "+-2..-1" means include -2 to -1.
+
+Named selectors allow for pre-defined selectors to be interpolated into a
+selector_string.  They begin with a dollar character and otherwise can only
+contain lower case alpha or underscore characters (a-z,_).
+
+=head2 EXAMPLES
+
+Lets say we have a date tree like so:
+
+=begin code
+
+ $data_tree = {
+     count => 2,
+     items => [
+         {
+             body => 'b1',
+             links => [ 'l1', 'l2', 'l3', ],
+             rel_1_url => 'foo',
+             rel_1_id => 12,
+             rel_2_url => 'bar',
+             rel_2_id => 34,
+         },
+         {
+             body => 'b2',
+             links => [ 'l4', 'l5', ],
+             rel_1_url => 'up',
+             rel_1_id => 56,
+             rel_2_url => 'down',
+             rel_2_id => 78,
+         },
+     ],
+     total => 42,
+ }
+
+=end code
+
+=item total only
+
+=begin code
+
+ $selector_string = "total";
+
+ $data_tree = {
+     total => 42,
+ }
+
+=end code
+
+=item only rel urls in items
+
+=begin code
+
+ $selector_string = "items.*.rel_*_url"
+
+ $data_tree = {
+     items => [
+         {
+             rel_1_url => 'foo',
+             rel_2_url => 'bar',
+         },
+         {
+             rel_1_url => 'up',
+             rel_2_url => 'down',
+         },
+     ],
+ }
+
+=end code
+
+=item count and last item with no body
+
+=begin code
+
+ $selector_string = "count,items.+-1.-body"
+
+ $data_tree = {
+     count => 2,
+     items => [
+         {
+             links => [ 'l4', 'l5', ],
+             rel_1_url => 'up',
+             rel_1_id => 56,
+             rel_2_url => 'down',
+             rel_2_id => 78,
+         },
+     ],
+ }
+
+=end code
+
+=item last 2 links
+
+=begin code
+
+ $selector_string = "items.*.links.+-2..-1"
+
+ $data_tree = {
+     items => [
+         {
+             links => [ 'l2', 'l3', ],
+         },
+         {
+             links => [ 'l4', 'l5', ],
+         },
+     ],
+ }
+
+=end code
+
+=end pod
+
 grammar Data::Selector::SelectorString::Grammar {
     token TOP {
         ^ <selector_group> $
@@ -109,6 +320,23 @@ class Data::Selector::SelectorString::Actions {
 }
 
 class Data::Selector {
+
+=begin pod
+
+=head1 METHODS
+
+=item parse_string
+
+Creates a selector tree from a selector string.  A map of named selectors can
+also be provided which will be interpolated into the selector string before it
+is parsed.
+
+Required Args:  selector_string
+
+Optional Args:  named_selectors
+
+=end pod
+
     method parse_string ( Str :$selector_string!, Hash :$named_selectors --> Hash ) {
         my $tree = Data::Selector::SelectorString::Grammar.parse(
             "[$selector_string]",
@@ -137,6 +365,17 @@ class Data::Selector {
 
         return reorder( $tree );
     }
+
+=begin pod
+
+=item apply_tree
+
+Include or exclude parts of a data tree as specified by a selector tree.  Note
+that arrays that have elements excluded, or removed, will be trimmed.
+
+Required Args:  selector_tree, data_tree
+
+=end pod
 
     method apply_tree ( Hash :$selector_tree!, Hash :$data_tree! is rw --> Nil ) {
         my @queue = ( [ $selector_tree, $data_tree, ], );
