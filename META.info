@@ -1,8 +1,8 @@
 {
     "name" : "Data::Selector",
-    "version" : "0.1.0",
-    "description" : "Data selection featuring terse DSL.",
+    "version" : "1.00",
+    "description" : "data selection dsl parser and applicator",
     "author" : "Justin DeVuyst",
     "depends" : [ ],
-    "source-url" : "git://github.com/jdv79/p6-Data-Selector.git"
+    "source-url" : "git://github.com/jdv/p6-data-selector.git"
 }
