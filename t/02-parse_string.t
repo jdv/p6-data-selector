@@ -331,4 +331,4 @@ for @cases -> $case {
     #}
 }
 
-done;
+done-testing;

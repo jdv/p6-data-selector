@@ -188,4 +188,4 @@ for @cases {
     is-deeply( $data_tree_local, $data_tree_expected, "$desc applied" );
 }
 
-done;
+done-testing;
