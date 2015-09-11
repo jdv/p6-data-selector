@@ -9,11 +9,11 @@
         "Data::Selector::SelectorString::Grammar" : "lib/Data/Selector.pm",
         "Data::Selector"                          : "lib/Data/Selector.pm"
     },
-    support : {
+    "support" : {
         "email" : "justin@devuyst.com",
         "bugtracker" : "https://github.com/jdv/p6-data-selector/issues",
         "source" : "https://github.com/jdv/p6-data-selector.git",
-        "irc" : "irc://irc.freenode.net/perl6",
+        "irc" : "irc://irc.freenode.net/perl6"
     },
     "license" : "artistic_2"
 }
