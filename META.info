@@ -1,4 +1,5 @@
 {
+    "perl" : "6.*",
     "name" : "Data::Selector",
     "version" : "1.02",
     "description" : "data selection dsl parser and applicator",
